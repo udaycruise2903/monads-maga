@@ -137,8 +137,8 @@ parseCliArgs =
       info
         (versionOption <*> p <**> helper)
         ( fullDesc
-            <> progDesc "ema-template: TODO"
-            <> header "ema-template"
+            <> progDesc "monads-maga: TODO"
+            <> header "monads-maga"
         )
       where
         versionOption = infoOption "0.1" (long "version" <> help "Show version")
