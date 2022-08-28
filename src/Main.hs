@@ -23,7 +23,9 @@ data Model = Model
 
 data HtmlRoute
   = HtmlRoute_Index
-  | HtmlRoute_About
+  | HtmlRoute_Blog
+  | HtmlRoute_Notes
+  | HtmlRoute_CV
   deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
 
 deriveGeneric ''HtmlRoute
@@ -84,10 +86,14 @@ renderBody rp model r = do
     case r of
       HtmlRoute_Index -> do
         "You are on the index page. Want to see "
-        routeLink rp HtmlRoute_About "About"
+        routeLink rp HtmlRoute_Blog "Blog"
         "?"
-      HtmlRoute_About -> do
-        "You are on the about page."
+      HtmlRoute_Blog -> do
+        "You are on the blog page."
+      HtmlRoute_Notes -> do
+        "You are on the Notes page."
+      HtmlRoute_CV -> do
+        "You are on the CV page."
     H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
 
 renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
@@ -102,7 +108,9 @@ renderNavbar rp currentRoute =
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_Index -> "Home"
-  HtmlRoute_About -> "About"
+  HtmlRoute_Blog -> "Blog"
+  HtmlRoute_Notes -> "Notes"
+  HtmlRoute_CV -> "CV"
 
 routeLink :: Prism' FilePath Route -> HtmlRoute -> H.Html -> H.Html
 routeLink rp r =
