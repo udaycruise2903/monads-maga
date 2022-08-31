@@ -104,14 +104,36 @@ renderBody rp model r = do
       HtmlRoute_CV -> do
         "You are on the CV page."
     H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
-    renderFooter
+    renderFooter rp model
 
-renderFooter :: H.Html  
-renderFooter = do
-  H.footer 
-  ! A.class_ "w-full h-10 bg-rose-300 rounded p-2 border-t-2 border-white fixed left-0 bottom-0 flex justify-center items-center text-white text-1xl" $ do
-    H.pre "Made with " ! A.class_ "text-black" 
-    H.a ! A.class_ "text-red-500 hover" ! A.href "https://ema.srid.ca/" $ "Ema"
+
+-- renderFooter :: H.Html  
+-- renderFooter = do
+--   H.footer 
+--   ! A.class_ "w-full h-10 bg-rose-300 rounded p-2 border-t-2 border-white fixed left-0 bottom-0 flex justify-center items-center text-white text-1xl" $ do
+--     H.pre "Made with " ! A.class_ "text-black" 
+--     H.a ! A.class_ "text-red-500 hover" ! A.href "https://ema.srid.ca/" $ "Ema"
+
+renderFooter :: Prism' FilePath Route -> Model -> H.Html
+renderFooter rp model = do
+  H.footer $
+    H.div ! A.class_ "mt-16 flex flex-col items-center" $ do
+      H.div ! A.class_ "mb-3 flex space-x-4" $ do
+        footerLink "mail.svg" "Mail" "mailto:udaycruise2903@gmail.com"
+        footerLink "github.svg" "Github" "https://github.com/udaycruise2903/"
+        footerLink "twitter.svg" "Youtube" "https://twitter.com/neoatnebula"
+      H.div ! A.class_ "mb-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400" $ do
+        H.div "Monads Maga © 2022"
+      H.div ! A.class_ "mb-8 text-sm text-gray-500 dark:text-gray-400" $ do
+        "Made with "
+        H.a ! A.class_ "text-rose-700" ! A.target "_blank" ! A.rel "noopener noreferrer" ! A.href "https://www.haskell.org/" $ "Haskell"
+        " and "
+        H.a ! A.class_ "text-rose-700" ! A.target "_blank" ! A.rel "noopener noreferrer" ! A.href "https://ema.srid.ca/" $ "Ema"
+  where
+    footerLink image altText url =
+      H.a ! A.class_ "text-sm text-gray-500 transition h-8 v-8" ! A.target "_blank" ! A.rel "noopener noreferrer" ! A.href url $ do
+        H.span ! A.class_ "sr-only" $ altText
+        H.img ! A.class_ "fill-current text-gray-700 hover:border-b-2 hover:text-blue-500 dark:text-gray-200 dark:hover:text-blue-400 h-6 w-6" ! A.src (staticRouteUrl rp model image)
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
