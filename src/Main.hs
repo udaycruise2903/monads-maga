@@ -78,6 +78,15 @@ renderHead rp model r = do
   H.base ! A.href (H.toValue $ modelBaseUrl model)
   H.link ! A.rel "stylesheet" ! A.href (staticRouteUrl rp model "tailwind.css")
 
+renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
+renderNavbar rp currentRoute =
+  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
+    forM_ (universe @HtmlRoute) $ \r ->
+      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
+       in H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+            ! A.class_ ("rounded p-2 " <> extraClass)
+            $ H.toHtml $ routeTitle r
+
 renderBody :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderBody rp model r = do
   H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
@@ -95,15 +104,14 @@ renderBody rp model r = do
       HtmlRoute_CV -> do
         "You are on the CV page."
     H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
+    renderFooter
 
-renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
-renderNavbar rp currentRoute =
-  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
-    forM_ (universe @HtmlRoute) $ \r ->
-      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
-       in H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
-            ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml $ routeTitle r
+renderFooter :: H.Html  
+renderFooter = do
+  H.footer 
+  ! A.class_ "w-full h-10 bg-rose-300 rounded p-2 border-t-2 border-white fixed left-0 bottom-0 flex justify-center items-center text-white text-1xl" $ do
+    H.pre "Made with " ! A.class_ "text-black" 
+    H.a ! A.class_ "text-red-500 hover" ! A.href "https://ema.srid.ca/" $ "Ema"
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
