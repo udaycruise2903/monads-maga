@@ -78,6 +78,15 @@ renderHead rp model r = do
   H.base ! A.href (H.toValue $ modelBaseUrl model)
   H.link ! A.rel "stylesheet" ! A.href (staticRouteUrl rp model "tailwind.css")
 
+renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
+renderNavbar rp currentRoute =
+  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
+    forM_ (universe @HtmlRoute) $ \r ->
+      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
+       in H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
+            ! A.class_ ("rounded p-2 " <> extraClass)
+            $ H.toHtml $ routeTitle r
+
 renderBody :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
 renderBody rp model r = do
   H.div ! A.class_ "container mx-auto mt-8 p-2" $ do
@@ -95,15 +104,28 @@ renderBody rp model r = do
       HtmlRoute_CV -> do
         "You are on the CV page."
     H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
+    renderFooter rp model
 
-renderNavbar :: Prism' FilePath Route -> HtmlRoute -> H.Html
-renderNavbar rp currentRoute =
-  H.nav ! A.class_ "w-full text-xl font-bold flex space-x-4  mb-4" $ do
-    forM_ (universe @HtmlRoute) $ \r ->
-      let extraClass = if r == currentRoute then "bg-rose-400 text-white" else "text-gray-700"
-       in H.a ! A.href (H.toValue $ routeUrl rp $ Route_Html r)
-            ! A.class_ ("rounded p-2 " <> extraClass)
-            $ H.toHtml $ routeTitle r
+renderFooter :: Prism' FilePath Route -> Model -> H.Html
+renderFooter rp model = do
+  H.footer $
+    H.div ! A.class_ "mt-16 flex flex-col items-center" $ do
+      H.div ! A.class_ "mb-3 flex space-x-4" $ do
+        footerLink "mail.svg" "Mail" "mailto:udaycruise2903@gmail.com"
+        footerLink "github.svg" "Github" "https://github.com/udaycruise2903/"
+        footerLink "twitter.svg" "Youtube" "https://twitter.com/neoatnebula"
+      H.div ! A.class_ "mb-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400" $ do
+        H.div "Monads Maga © 2022"
+      H.div ! A.class_ "mb-8 text-sm text-gray-500 dark:text-gray-400" $ do
+        "Made with "
+        H.a ! A.class_ "text-rose-700" ! A.target "_blank" ! A.rel "noopener noreferrer" ! A.href "https://www.haskell.org/" $ "Haskell"
+        " and "
+        H.a ! A.class_ "text-rose-700" ! A.target "_blank" ! A.rel "noopener noreferrer" ! A.href "https://ema.srid.ca/" $ "Ema"
+  where
+    footerLink image altText url =
+      H.a ! A.class_ "text-sm text-gray-500 transition h-8 v-8" ! A.target "_blank" ! A.rel "noopener noreferrer" ! A.href url $ do
+        H.span ! A.class_ "sr-only" $ altText
+        H.img ! A.class_ "fill-current text-gray-700 hover:border-b-2 hover:text-blue-500 dark:text-gray-200 dark:hover:text-blue-400 h-6 w-6" ! A.src (staticRouteUrl rp model image)
 
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
