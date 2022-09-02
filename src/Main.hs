@@ -144,6 +144,9 @@ renderFooter rp model = do
         H.span ! A.class_ "sr-only" $ altText
         H.img ! A.class_ "fill-current text-gray-700 hover:border-b-2 hover:text-blue-500 dark:text-gray-200 dark:hover:text-blue-400 h-6 w-6" ! A.src (staticRouteUrl rp model image)
 
+routeHref :: Prism' FilePath Route -> HtmlRoute -> H.AttributeValue
+routeHref rp r = fromString . toString $ Ema.routeUrlWith Ema.UrlPretty rp (Route_Html r)
+
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_Index -> "Home"
