@@ -4,6 +4,7 @@
 module Main where
 
 import Data.Default (def)
+import Data.Set as Set (fromList)
 import Data.Generics.Sum.Any (AsAny (_As))
 import Ema
 import Ema.CLI qualified
@@ -26,7 +27,7 @@ data Model = Model
 
 data HtmlRoute
   = HtmlRoute_Index
-  | HtmlRoute_Blog
+  | HtmlRoute_Blog 
   | HtmlRoute_Notes
   | HtmlRoute_CV
   deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
@@ -68,9 +69,8 @@ instance EmaSite Route where
     markdownDyn <- 
       siteInput @PR.PandocRoute cliAct $ 
         def 
-          { PR.argBaseDir = "markdown"
-          , PR.argFormats = one ".md"
-          --, PR.argFormats = one ".org"
+          { PR.argBaseDir = "markup"
+          , PR.argFormats = Set.fromList [".md", ".org"]
           }
     pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn <*> markdownDyn
   siteOutput rp m = \case
