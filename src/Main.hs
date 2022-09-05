@@ -72,7 +72,7 @@ instance EmaSite Route where
           , PR.argFormats = one ".md"
           --, PR.argFormats = one ".org"
           }
-    pure $ Model <$> staticRouteDyn <*> markdownDyn
+    pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn <*> markdownDyn
   siteOutput rp m = \case
     Route_Html r ->
       pure $ Ema.AssetGenerated Ema.Html $ renderHtmlRoute rp m r
