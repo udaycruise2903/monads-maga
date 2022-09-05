@@ -3,11 +3,14 @@
 
 module Main where
 
+import Data.Default (def)
+import Data.Set as Set (fromList)
 import Data.Generics.Sum.Any (AsAny (_As))
 import Ema
 import Ema.CLI qualified
 import Ema.Route.Generic.TH
 import Ema.Route.Lib.Extra.StaticRoute qualified as SR
+import Ema.Route.Lib.Extra.PandocRoute qualified as PR
 import Optics.Core (Prism', (%))
 import Options.Applicative
 import Text.Blaze.Html.Renderer.Utf8 qualified as RU
@@ -18,18 +21,28 @@ import Text.Blaze.Html5.Attributes qualified as A
 data Model = Model
   { modelBaseUrl :: Text
   , modelStatic :: SR.Model
+  , modelMarkdown :: PR.Model
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Generic)
 
 data HtmlRoute
   = HtmlRoute_Index
-  | HtmlRoute_Blog
+  | HtmlRoute_Blog 
   | HtmlRoute_Notes
   | HtmlRoute_CV
   deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
 
 deriveGeneric ''HtmlRoute
-deriveIsRoute ''HtmlRoute [t|'[]|]
+deriveIsRoute ''HtmlRoute 
+  [t|
+    '[ WithSubRoutes
+        '[ FileRoute "index.html"
+         , FileRoute "blog.html"
+         , FileRoute "notes.html"
+         , FileRoute "cv.html"
+        ]
+    ]
+  |]
 
 type StaticRoute = SR.StaticRoute "static"
 
@@ -53,7 +66,13 @@ instance EmaSite Route where
   type SiteArg Route = CliArgs
   siteInput cliAct args = do
     staticRouteDyn <- siteInput @StaticRoute cliAct ()
-    pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn
+    markdownDyn <- 
+      siteInput @PR.PandocRoute cliAct $ 
+        def 
+          { PR.argBaseDir = "markup"
+          , PR.argFormats = Set.fromList [".md", ".org"]
+          }
+    pure $ Model (cliArgsBaseUrl args) <$> staticRouteDyn <*> markdownDyn
   siteOutput rp m = \case
     Route_Html r ->
       pure $ Ema.AssetGenerated Ema.Html $ renderHtmlRoute rp m r
@@ -67,7 +86,7 @@ renderHtmlRoute rp m r = do
     H.html ! A.lang "en" $ do
       H.head $ do
         renderHead rp m r
-      H.body $ do
+      H.body ! A.class_ "text-stone-900 antialiased" $ do
         renderBody rp m r
 
 renderHead :: Prism' FilePath Route -> Model -> HtmlRoute -> H.Html
@@ -94,15 +113,13 @@ renderBody rp model r = do
     H.h1 ! A.class_ "text-3xl font-bold" $ H.toHtml $ routeTitle r
     case r of
       HtmlRoute_Index -> do
-        "You are on the index page. Want to see "
-        routeLink rp HtmlRoute_Blog "Blog"
-        "?"
+        renderMarkdown model "index.md"
       HtmlRoute_Blog -> do
-        "You are on the blog page."
+        renderMarkdown model "blog.md"
       HtmlRoute_Notes -> do
-        "You are on the Notes page."
+        renderMarkdown model "notes.md"
       HtmlRoute_CV -> do
-        "You are on the CV page."
+        renderMarkdown model "cv.md"
     H.img ! A.src (staticRouteUrl rp model "logo.svg") ! A.class_ "py-4 w-32" ! A.alt "Ema Logo"
     renderFooter rp model
 
@@ -127,6 +144,9 @@ renderFooter rp model = do
         H.span ! A.class_ "sr-only" $ altText
         H.img ! A.class_ "fill-current text-gray-700 hover:border-b-2 hover:text-blue-500 dark:text-gray-200 dark:hover:text-blue-400 h-6 w-6" ! A.src (staticRouteUrl rp model image)
 
+routeHref :: Prism' FilePath Route -> HtmlRoute -> H.AttributeValue
+routeHref rp r = fromString . toString $ Ema.routeUrlWith Ema.UrlPretty rp (Route_Html r)
+
 routeTitle :: HtmlRoute -> Text
 routeTitle r = case r of
   HtmlRoute_Index -> "Home"
@@ -143,6 +163,27 @@ routeLink rp r =
 staticRouteUrl :: IsString r => Prism' FilePath Route -> Model -> FilePath -> r
 staticRouteUrl rp m =
   SR.staticRouteUrl (rp % (_As @"Route_Static")) (modelStatic m)
+
+-- | Render a Markdown file inside ./markdown directory
+renderMarkdown :: Model -> String -> H.Html
+renderMarkdown m fp =
+  H.div ! A.class_ ("prose max-w-none " <> proseStyle) $ do
+    renderMarkdown' m fp
+  where
+    -- Style Pandoc generated HTML en masse here.
+    -- See https://tailwindcss.com/docs/typography-plugin
+    proseStyle = "rounded p-4 text-stone-800 prose-a:underline prose-a:decoration-rose-600 prose-a:decoration-solid prose-a:decoration-1 hover:prose-a:decoration-2"
+
+-- | Like `renderMarkdown` but without the prose styling
+renderMarkdown' :: HasCallStack => Model -> String -> H.Html
+renderMarkdown' m fp =
+  case PR.lookupPandocRoute (modelMarkdown m) (fromString fp) of
+    Nothing -> error $ "renderMarkdown: not a Pandoc ext: " <> toText fp
+    Just (pandoc, render) ->
+      renderRawHtml $ PR.unPandocHtml $ render pandoc
+  where
+    renderRawHtml =
+      H.unsafeLazyByteString . encodeUtf8
 
 -- CLI argument handling
 -- ---------------------
